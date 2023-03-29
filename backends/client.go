@@ -3,12 +3,15 @@ package backends
 import (
 	"errors"
 	"strings"
-
+	
+	"github.com/nacos-group/nacos-sdk-go/common/constant"
+	
 	"github.com/kelseyhightower/confd/backends/consul"
 	"github.com/kelseyhightower/confd/backends/dynamodb"
 	"github.com/kelseyhightower/confd/backends/env"
 	"github.com/kelseyhightower/confd/backends/etcdv3"
 	"github.com/kelseyhightower/confd/backends/file"
+	"github.com/kelseyhightower/confd/backends/nacos"
 	"github.com/kelseyhightower/confd/backends/rancher"
 	"github.com/kelseyhightower/confd/backends/redis"
 	"github.com/kelseyhightower/confd/backends/ssm"
@@ -26,18 +29,18 @@ type StoreClient interface {
 
 // New is used to create a storage client based on our configuration.
 func New(config Config) (StoreClient, error) {
-
+	
 	if config.Backend == "" {
 		config.Backend = "etcd"
 	}
 	backendNodes := config.BackendNodes
-
+	
 	if config.Backend == "file" {
 		log.Info("Backend source(s) set to " + strings.Join(config.YAMLFile, ", "))
 	} else {
 		log.Info("Backend source(s) set to " + strings.Join(backendNodes, ", "))
 	}
-
+	
 	switch config.Backend {
 	case "consul":
 		return consul.New(config.BackendNodes, config.Scheme,
@@ -83,6 +86,15 @@ func New(config Config) (StoreClient, error) {
 		return dynamodb.NewDynamoDBClient(table)
 	case "ssm":
 		return ssm.New()
+	case "nacos":
+		return nacos.NewNacosClient(backendNodes, config.Group, constant.ClientConfig{
+			NamespaceId: config.Namespace,
+			AccessKey:   config.AccessKey,
+			SecretKey:   config.SecretKey,
+			Endpoint:    config.Endpoint,
+			OpenKMS:     config.OpenKMS,
+			RegionId:    config.RegionId,
+		})
 	}
 	return nil, errors.New("Invalid backend")
 }

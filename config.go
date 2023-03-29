@@ -9,8 +9,9 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
-
+	
 	"github.com/BurntSushi/toml"
+	
 	"github.com/kelseyhightower/confd/backends"
 	"github.com/kelseyhightower/confd/log"
 	"github.com/kelseyhightower/confd/resource/template"
@@ -70,6 +71,11 @@ func init() {
 	flag.StringVar(&config.Username, "username", "", "the username to authenticate as (only used with vault and etcd backends)")
 	flag.StringVar(&config.Password, "password", "", "the password to authenticate with (only used with vault and etcd backends)")
 	flag.BoolVar(&config.Watch, "watch", false, "enable watch support")
+	// nacos config
+	flag.StringVar(&config.Group, "group", "DEFAULT_GROUP", "the group in nacos (only used with nacos backends)")
+	flag.StringVar(&config.Namespace, "namespace", "", "the namespace in nacos (only used with nacos backends)")
+	flag.StringVar(&config.AccessKey, "accessKey", "", "the accessKey to authenticate in nacos (only used with nacos backends)")
+	flag.StringVar(&config.SecretKey, "secretKey", "", "the secretKey to authenticate in nacos (only used with nacos backends)")
 }
 
 // initConfig initializes the confd configuration by first setting defaults,
@@ -87,24 +93,24 @@ func initConfig() error {
 		if err != nil {
 			return err
 		}
-
+		
 		_, err = toml.Decode(string(configBytes), &config)
 		if err != nil {
 			return err
 		}
 	}
-
+	
 	// Update config from environment variables.
 	processEnv()
-
+	
 	if config.LogLevel != "" {
 		log.SetLevel(config.LogLevel)
 	}
-
+	
 	if config.SRVDomain != "" && config.SRVRecord == "" {
 		config.SRVRecord = fmt.Sprintf("_%s._tcp.%s.", config.Backend, config.SRVDomain)
 	}
-
+	
 	// Update BackendNodes from SRV records.
 	if config.Backend != "env" && config.SRVRecord != "" {
 		log.Info("SRV record set to " + config.SRVRecord)
@@ -112,7 +118,7 @@ func initConfig() error {
 		if err != nil {
 			return errors.New("Cannot get nodes from SRV records " + err.Error())
 		}
-
+		
 		switch config.Backend {
 		case "etcd":
 			vsm := make([]string, len(srvNodes))
@@ -121,7 +127,7 @@ func initConfig() error {
 			}
 			srvNodes = vsm
 		}
-
+		
 		config.BackendNodes = srvNodes
 	}
 	if len(config.BackendNodes) == 0 {
@@ -143,23 +149,25 @@ func initConfig() error {
 			config.BackendNodes = []string{"http://127.0.0.1:8200"}
 		case "zookeeper":
 			config.BackendNodes = []string{"127.0.0.1:2181"}
+		case "nacos":
+			config.BackendNodes = []string{"127.0.0.1:8848"}
 		}
 	}
 	// Initialize the storage client
 	log.Info("Backend set to " + config.Backend)
-
+	
 	if config.Watch {
 		unsupportedBackends := map[string]bool{
 			"dynamodb": true,
 			"ssm":      true,
 		}
-
+		
 		if unsupportedBackends[config.Backend] {
 			log.Info(fmt.Sprintf("Watch is not supported for backend %s. Exiting...", config.Backend))
 			os.Exit(1)
 		}
 	}
-
+	
 	if config.Backend == "dynamodb" && config.Table == "" {
 		return errors.New("no DynamoDB table configured")
 	}
@@ -170,7 +178,7 @@ func initConfig() error {
 
 func getBackendNodesFromSRV(record string) ([]string, error) {
 	nodes := make([]string, 0)
-
+	
 	// Ignore the CNAME as we don't need it.
 	_, addrs, err := net.LookupSRV("", "", record)
 	if err != nil {
@@ -189,12 +197,12 @@ func processEnv() {
 	if len(cakeys) > 0 && config.ClientCaKeys == "" {
 		config.ClientCaKeys = cakeys
 	}
-
+	
 	cert := os.Getenv("CONFD_CLIENT_CERT")
 	if len(cert) > 0 && config.ClientCert == "" {
 		config.ClientCert = cert
 	}
-
+	
 	key := os.Getenv("CONFD_CLIENT_KEY")
 	if len(key) > 0 && config.ClientKey == "" {
 		config.ClientKey = key

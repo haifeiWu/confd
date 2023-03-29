@@ -3,7 +3,7 @@ package main
 import (
 	"reflect"
 	"testing"
-
+	
 	"github.com/kelseyhightower/confd/log"
 )
 
@@ -15,6 +15,7 @@ func TestInitConfigDefaultConfig(t *testing.T) {
 			BackendNodes: []string{"http://127.0.0.1:4001"},
 			Scheme:       "http",
 			Filter:       "*",
+			Group:        "DEFAULT_GROUP",
 		},
 		TemplateConfig: TemplateConfig{
 			ConfDir:     "/etc/confd",
