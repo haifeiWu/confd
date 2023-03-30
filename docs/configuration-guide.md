@@ -36,6 +36,10 @@ Optional:
 * `file` (array of strings) - The YAML file to watch for changes (only used with -backend=file).
 * `filter` (string) - Files filter (only used with -backend=file) (default "*").
 * `path` (string) - Vault mount path of the auth method (only used with -backend=vault).
+* `namespace` (string) the namespace in nacos (only used with nacos backends)
+* `group` (string) the group in nacos (only used with nacos backends)
+* `accessKey` (string) the accessKey to authenticate in nacos (only used with nacos backends)
+* `secretKey` (string) the secretKey to authenticate in nacos (only used with nacos backends)
 
 Example:
 

@@ -227,6 +227,12 @@ database_user = rob
 confd -onetime -backend ssm
 ```
 
+#### nacos
+
+```
+confd -backend nacos -node http://127.0.0.1:8848 
+```
+
 ## Advanced Example
 
 In this example we will use confd to manage two nginx config files using a single template.
